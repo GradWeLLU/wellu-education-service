@@ -1,0 +1,43 @@
+services:
+
+  education-db:
+    image: postgres:14
+    container_name: education_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: education
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: education
+    ports:
+      - "5435:5432"
+    volumes:
+      - education-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U education -d education"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  education-service:
+    build: .
+    container_name: education-service
+    image: wellu-education-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+
+    env_file:
+      - .env
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://education-db:5432/education
+      SPRING_DATASOURCE_USERNAME: education
+      SPRING_DATASOURCE_PASSWORD: password
+
+    depends_on:
+      education-db:
+        condition: service_healthy
+
+volumes:
+  education-postgres-data:

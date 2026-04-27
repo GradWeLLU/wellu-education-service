@@ -19,6 +19,7 @@ public class Quiz {
 
     @Id
     @GeneratedValue
+    @Column(columnDefinition = "uuid")
     private UUID id;
 
     private String title;

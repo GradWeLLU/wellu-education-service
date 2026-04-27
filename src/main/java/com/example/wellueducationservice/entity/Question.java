@@ -1,5 +1,6 @@
 package com.example.wellueducationservice.entity;
 
+import com.example.wellueducationservice.enumeration.Difficulty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +25,9 @@ public class Question {
     private int correctAnswerIndex;
 
     private String explanation;
+
+    @Enumerated(EnumType.STRING)
+    private Difficulty difficulty;
 
     private Integer points;
 

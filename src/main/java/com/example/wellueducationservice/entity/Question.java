@@ -14,11 +14,18 @@ public class Question {
 
     @Id
     @GeneratedValue
+    @Column(columnDefinition = "uuid")
     private UUID id;
 
     private String content;
 
     @ElementCollection
+    @CollectionTable(
+            name = "question_choices",
+            joinColumns = @JoinColumn(name = "question_id")
+    )
+    @Column(name = "choice_text")
+    @OrderColumn(name = "choice_order")
     private List<String> choices;
 
     private int correctAnswerIndex;

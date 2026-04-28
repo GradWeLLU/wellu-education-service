@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Setter
 @Getter
+@Table(name = "quizzes")
 public class Quiz {
 
     @Id

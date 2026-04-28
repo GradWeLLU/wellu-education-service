@@ -23,6 +23,10 @@ public class QuizCreationService {
         }
 
         quiz.setQuestions(questions);
+        quiz.setDifficulty("EASY");
+        quiz.setIsDaily(true);
+        quiz.setTimeLimit(100);
+        quiz.setTotalPoints(10);
 
         return quiz;
     }

@@ -10,6 +10,7 @@ import java.util.UUID;
 @Entity
 @Setter
 @Getter
+@Table(name = "questions")
 public class Question {
 
     @Id

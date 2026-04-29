@@ -3,7 +3,6 @@ package com.example.wellueducationservice.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -43,8 +42,8 @@ public class QuizAttempt {
         for (Question q : quiz.getQuestions()) {
             Integer userAnswer = answers.get(q.getId());
 
-            if (userAnswer== q.getCorrectAnswerIndex()) {
-                total += q.getPoints();
+            if (userAnswer != null && userAnswer == q.getCorrectAnswerIndex()) {
+                total += q.getPoints() == null ? 0 : q.getPoints();
             }
         }
 

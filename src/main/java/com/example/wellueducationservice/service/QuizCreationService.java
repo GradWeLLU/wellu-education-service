@@ -1,8 +1,10 @@
 package com.example.wellueducationservice.service;
 
+import com.example.wellueducationservice.dto.request.CreateQuizRequestDto;
 import com.example.wellueducationservice.dto.request.CsvQuestionRow;
 import com.example.wellueducationservice.entity.Question;
 import com.example.wellueducationservice.entity.Quiz;
+import com.example.wellueducationservice.enumeration.Difficulty;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -10,31 +12,30 @@ import java.util.List;
 
 @Service
 public class QuizCreationService {
-    public Quiz createQuizFromRows(String title, List<CsvQuestionRow> rows) {
-
-        Quiz quiz = new Quiz();
-        quiz.setTitle(title);
-
+    public List<Question> createUnassignedQuestions(List<CsvQuestionRow> rows) {
         List<Question> questions = new ArrayList<>();
 
         for (CsvQuestionRow row : rows) {
-            Question question = mapToQuestion(row, quiz);
-            questions.add(question);
+            questions.add(mapToQuestion(row));
         }
 
-        quiz.setQuestions(questions);
-        quiz.setDifficulty("EASY");
-        quiz.setIsDaily(true);
-        quiz.setTimeLimit(100);
-        quiz.setTotalPoints(10);
+        return questions;
+    }
+
+    public Quiz createQuiz(CreateQuizRequestDto request, int totalPoints) {
+        Quiz quiz = new Quiz();
+        quiz.setTitle(request.title().trim());
+        quiz.setDifficulty(request.difficulty() == null ? Difficulty.EASY : request.difficulty());
+        quiz.setTimeLimit(request.timeLimit());
+        quiz.setIsDaily(request.isDaily() != null && request.isDaily());
+        quiz.setTotalPoints(totalPoints);
+        quiz.setQuestions(new ArrayList<>());
 
         return quiz;
     }
 
-    private Question mapToQuestion(CsvQuestionRow row, Quiz quiz) {
-
+    private Question mapToQuestion(CsvQuestionRow row) {
         Question question = new Question();
-
         question.setContent(row.question());
 
         // Build choices (correct ALWAYS first)
@@ -54,9 +55,7 @@ public class QuizCreationService {
 
         // Optional: default points
         question.setPoints(1);
-
-        // Set relationship
-        question.setQuiz(quiz);
+        question.setDifficulty(null);
 
         return question;
     }

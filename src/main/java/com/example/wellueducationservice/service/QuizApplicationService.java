@@ -1,39 +1,135 @@
 package com.example.wellueducationservice.service;
 
+import com.example.wellueducationservice.dto.request.CreateQuizRequestDto;
 import com.example.wellueducationservice.dto.request.CsvQuestionRow;
+import com.example.wellueducationservice.dto.response.QuestionImportResponseDto;
+import com.example.wellueducationservice.dto.response.QuizResponseDto;
+import com.example.wellueducationservice.entity.Question;
 import com.example.wellueducationservice.entity.Quiz;
+import com.example.wellueducationservice.mapper.QuizMapper;
+import com.example.wellueducationservice.repository.QuestionRepository;
 import com.example.wellueducationservice.repository.QuizRepository;
-import org.hibernate.annotations.SecondaryRow;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class QuizApplicationService {
     private final CsvParserService parserService;
     private final QuizCreationService creationService;
+    private final QuestionRepository questionRepository;
     private final QuizRepository quizRepository;
+    private final QuizMapper quizMapper;
 
     public QuizApplicationService(
             CsvParserService parserService,
             QuizCreationService creationService,
-            QuizRepository quizRepository
+            QuestionRepository questionRepository,
+            QuizRepository quizRepository,
+            QuizMapper quizMapper
     ) {
         this.parserService = parserService;
         this.creationService = creationService;
+        this.questionRepository = questionRepository;
         this.quizRepository = quizRepository;
+        this.quizMapper = quizMapper;
     }
 
-    public Quiz createQuizFromCsv(String title, MultipartFile file) {
-
-        // 1. Parse CSV
+    @Transactional
+    public QuestionImportResponseDto importQuestions(MultipartFile file) {
         List<CsvQuestionRow> rows = parserService.parse(file);
+        List<Question> questions = creationService.createUnassignedQuestions(rows);
 
-        // 2. Convert to entities
-        Quiz quiz = creationService.createQuizFromRows(title, rows);
+        questionRepository.saveAll(questions);
 
-        // 3. Save ONCE (cascade handles questions)
-        return quizRepository.save(quiz);
+        return new QuestionImportResponseDto(questions.size(), questionRepository.countByQuizIsNull());
+    }
+
+    @Transactional
+    public QuizResponseDto createQuiz(CreateQuizRequestDto request) {
+        validateCreateQuizRequest(request);
+
+        List<Question> availableQuestions = new ArrayList<>(questionRepository.findAllByQuizIsNullOrderByContentAsc());
+        if (availableQuestions.size() < request.questionCount()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Not enough unassigned questions to create the requested quiz"
+            );
+        }
+
+        List<Question> selectedQuestions = selectUniqueQuestions(availableQuestions, request.questionCount());
+        if (selectedQuestions.size() < request.questionCount()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Not enough unique unassigned questions to create the requested quiz"
+            );
+        }
+
+        int totalPoints = selectedQuestions.stream()
+                .map(Question::getPoints)
+                .map(points -> points == null ? 0 : points)
+                .reduce(0, Integer::sum);
+
+        Quiz quiz = creationService.createQuiz(request, totalPoints);
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        for (Question question : selectedQuestions) {
+            question.setDifficulty(savedQuiz.getDifficulty());
+            savedQuiz.addQuestion(question);
+        }
+
+        questionRepository.saveAll(selectedQuestions);
+
+        return quizMapper.toDto(savedQuiz);
+    }
+
+    private void validateCreateQuizRequest(CreateQuizRequestDto request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quiz request body is required");
+        }
+
+        if (request.title() == null || request.title().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quiz title is required");
+        }
+
+        if (request.questionCount() == null || request.questionCount() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Quiz questionCount must be greater than zero"
+            );
+        }
+    }
+
+    private List<Question> selectUniqueQuestions(List<Question> availableQuestions, int questionCount) {
+        List<Question> selectedQuestions = new ArrayList<>();
+        Set<String> seenContents = new HashSet<>();
+
+        for (Question question : availableQuestions) {
+            String normalizedContent = normalizeQuestionContent(question.getContent());
+            if (!seenContents.add(normalizedContent)) {
+                continue;
+            }
+
+            selectedQuestions.add(question);
+            if (selectedQuestions.size() == questionCount) {
+                break;
+            }
+        }
+
+        return selectedQuestions;
+    }
+
+    private String normalizeQuestionContent(String content) {
+        return content == null
+                ? ""
+                : content.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 }

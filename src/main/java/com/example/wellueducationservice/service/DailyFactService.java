@@ -29,7 +29,7 @@ public class DailyFactService {
      * Fetch today's fact. Returns from DB if available; otherwise generates a new one.
      * Safe to call from multiple threads simultaneously.
      */
-    @Transactional(readOnly = true)
+    @Transactional()
     public DailyFactDto getTodayFact() {
         LocalDate today = LocalDate.now();
         return repository.findByFactDate(today)
@@ -46,6 +46,7 @@ public class DailyFactService {
             log.info("Daily fact for {} already exists — skipping generation.", today);
             return;
         }
+        System.out.println("Generating");
         generateAndPersist(today);
     }
 
@@ -59,6 +60,7 @@ public class DailyFactService {
      */
     @Transactional
     public DailyFact generateAndPersist(LocalDate date) {
+        System.out.println("Starting the process");
         try {
             log.info("Calling AI service to generate fact for {}.", date);
             AiFactResponse response = aiServiceClient.generateDailyFact();

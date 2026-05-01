@@ -20,8 +20,8 @@ public class FeignConfig {
     @Bean
     public Request.Options requestOptions() {
         return new Request.Options(
-                5,  TimeUnit.SECONDS,   // connect timeout
-                10, TimeUnit.SECONDS,   // read timeout
+                5,  TimeUnit.MINUTES,   // connect timeout
+                10, TimeUnit.MINUTES,   // read timeout
                 true                    // follow redirects
         );
     }

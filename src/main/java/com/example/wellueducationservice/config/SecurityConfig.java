@@ -1,4 +1,4 @@
-package com.example.wellueducationservice.config.security;
+package com.example.wellueducationservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

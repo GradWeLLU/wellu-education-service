@@ -8,6 +8,14 @@
         <version>3.2.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <groupId>com.example</groupId>
     <artifactId>wellu-education-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -67,6 +75,12 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.GradWeLLU</groupId>
+            <artifactId>common-lib</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>
@@ -178,16 +192,16 @@
 
         </plugins>
     </build>
-    <repositories>
-        <repository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>https://repo.spring.io/snapshot</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
-    </repositories>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>spring-snapshots</id>-->
+<!--            <name>Spring Snapshots</name>-->
+<!--            <url>https://repo.spring.io/snapshot</url>-->
+<!--            <releases>-->
+<!--                <enabled>false</enabled>-->
+<!--            </releases>-->
+<!--        </repository>-->
+<!--    </repositories>-->
     <pluginRepositories>
         <pluginRepository>
             <id>spring-snapshots</id>

@@ -84,7 +84,7 @@ public class DailyFactService {
                     ));
         } catch (FeignException ex) {
             log.error("Feign exception calling AI service: {}", ex.getMessage(), ex);
-            throw new AiServiceException("Failed to reach AI Service", ex);
+            throw new AiServiceException("Failed to reach AI Service"+ ex);
         }
     }
 }

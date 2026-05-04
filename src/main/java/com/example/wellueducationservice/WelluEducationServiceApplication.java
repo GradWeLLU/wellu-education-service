@@ -7,10 +7,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.wellu.common.exception.GlobalExceptionHandler;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+        "com.example.wellueducationservice",
+        "org.wellu.common"
+})
 @EnableFeignClients
 @EnableScheduling
-@Import(GlobalExceptionHandler.class)
 public class WelluEducationServiceApplication {
 
     public static void main(String[] args) {

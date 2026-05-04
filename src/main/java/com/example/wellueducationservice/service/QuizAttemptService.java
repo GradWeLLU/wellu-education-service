@@ -8,6 +8,9 @@ import com.example.wellueducationservice.dto.response.QuizAttemptResultResponseD
 import com.example.wellueducationservice.entity.Quiz;
 import com.example.wellueducationservice.entity.QuizAttempt;
 import com.example.wellueducationservice.entity.Question;
+import com.example.wellueducationservice.exception.QuizAttemptConflictException;
+import com.example.wellueducationservice.exception.QuizAttemptNotFoundException;
+import com.example.wellueducationservice.exception.QuizAttemptValidationException;
 import com.example.wellueducationservice.mapper.QuizAttemptMapper;
 import com.example.wellueducationservice.mapper.QuizMapper;
 import com.example.wellueducationservice.repository.QuizAttemptRepository;
@@ -15,8 +18,6 @@ import com.example.wellueducationservice.repository.QuizRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class QuizAttemptService {
                 .toList();
 
         if (quizzes.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No quizzes available for this difficulty");
+            throw new QuizAttemptNotFoundException("No quizzes available for the requested difficulty");
         }
         Quiz quiz = quizzes.get(ThreadLocalRandom.current().nextInt(quizzes.size()));
         QuizAttempt savedAttempt = quizAttemptRepository.save(quizAttemptMapper.toEntity(request, quiz));
@@ -58,10 +59,10 @@ public class QuizAttemptService {
         validateSubmitRequest(request);
 
         QuizAttempt attempt = quizAttemptRepository.findById(attemptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attempt not found"));
+                .orElseThrow(() -> new QuizAttemptNotFoundException("Quiz attempt not found"));
 
         if (attempt.getCompletedAt() != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Attempt has already been submitted");
+            throw new QuizAttemptConflictException("Quiz attempt has already been submitted");
         }
 
         validateSubmittedAnswers(attempt.getQuiz(), request.answers());
@@ -86,7 +87,7 @@ public class QuizAttemptService {
     @Transactional(readOnly = true)
     public List<QuizAttemptResponseDto> getUserAttempts(UUID userId) {
         if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
+            throw new QuizAttemptValidationException("User id is required");
         }
 
         return quizAttemptRepository.findByUserId(userId).stream()
@@ -96,21 +97,21 @@ public class QuizAttemptService {
 
     private void validateStartRequest(QuizAttemptStartRequestDto request) {
         if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Attempt start request is required");
+            throw new QuizAttemptValidationException("Quiz attempt start request is required");
         }
 
         if (request.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
+            throw new QuizAttemptValidationException("User id is required");
         }
 
         if (request.difficulty() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "difficulty is required");
+            throw new QuizAttemptValidationException("Difficulty is required");
         }
     }
 
     private void validateSubmitRequest(QuizAttemptSubmitRequestDto request) {
         if (request == null || request.answers() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "answers are required");
+            throw new QuizAttemptValidationException("Answers are required");
         }
     }
 
@@ -125,32 +126,20 @@ public class QuizAttemptService {
             Integer selectedAnswerIndex = answer.getValue();
 
             if (!quizQuestionIds.contains(questionId)) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Submitted answer contains a question that does not belong to this quiz"
-                );
+                throw new QuizAttemptValidationException("Answer contains a question outside this quiz");
             }
 
             Question quizQuestion = quiz.getQuestions().stream()
                     .filter(question -> question.getId().equals(questionId))
                     .findFirst()
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST,
-                            "Submitted answer references an unknown quiz question"
-                    ));
+                    .orElseThrow(() -> new QuizAttemptValidationException("Answer references an unknown quiz question"));
 
             if (selectedAnswerIndex == null) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "selectedAnswerIndex cannot be null"
-                );
+                throw new QuizAttemptValidationException("Selected answer index is required");
             }
 
             if (selectedAnswerIndex < 0 || selectedAnswerIndex >= quizQuestion.getChoices().size()) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "selectedAnswerIndex is out of range for one or more questions"
-                );
+                throw new QuizAttemptValidationException("Selected answer index is out of range");
             }
         }
     }

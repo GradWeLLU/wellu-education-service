@@ -1,29 +1,77 @@
 package com.example.wellueducationservice.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.wellu.common.security.*;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
 
-    public SecurityConfig() {
-        System.out.println(">>> SecurityConfig LOADED");
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${jwt.expiration}")
+    private long jwtExpiration;
+
+    @Bean
+    public JwtService jwtService() {
+
+        JwtConfig config = JwtConfig.builder()
+                .secret(jwtSecret)
+                .expiration(jwtExpiration)
+                .build();
+
+        return new JwtService(config);
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        System.out.println(">>> Custom SecurityFilterChain ACTIVE");
+    public JwtAuthFilter jwtAuthFilter(
+            JwtService jwtService,
+            JwtAuthenticationConverter converter
+    ) {
+        return new JwtAuthFilter(jwtService, converter);
+    }
 
-        http
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthFilter jwtAuthFilter,
+            ObjectMapper objectMapper
+    ) throws Exception {
+
+        return http
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable());
 
-        return http.build();
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().authenticated()
+                )
+
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(
+                                new CustomAuthenticationEntryPoint(objectMapper)
+                        )
+                        .accessDeniedHandler(
+                                new CustomAccessDeniedHandler(objectMapper)
+                        )
+                )
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+
+                .httpBasic(Customizer.withDefaults())
+
+                .build();
     }
 }

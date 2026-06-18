@@ -38,8 +38,8 @@ public class QuizAttemptService {
 
 
     @Transactional
-    public QuizAttemptResponseDto startAttempt(QuizAttemptStartRequestDto request) {
-        validateStartRequest(request);
+    public QuizAttemptResponseDto startAttempt(QuizAttemptStartRequestDto request,UUID userId) {
+        validateStartRequest(request, userId);
 
         List<Quiz> quizzes = quizRepository.findByDifficulty(request.difficulty()).stream()
                 .filter(quiz -> quiz.getQuestions() != null && !quiz.getQuestions().isEmpty())
@@ -49,7 +49,13 @@ public class QuizAttemptService {
             throw new QuizAttemptNotFoundException("No quizzes available for the requested difficulty");
         }
         Quiz quiz = quizzes.get(ThreadLocalRandom.current().nextInt(quizzes.size()));
-        QuizAttempt savedAttempt = quizAttemptRepository.save(quizAttemptMapper.toEntity(request, quiz));
+        QuizAttempt attempt =
+                quizAttemptMapper.toEntity(request, quiz);
+
+        attempt.setUserId(userId);
+
+        QuizAttempt savedAttempt =
+                quizAttemptRepository.save(attempt);
 
         return quizAttemptMapper.toDto(savedAttempt);
     }
@@ -95,12 +101,12 @@ public class QuizAttemptService {
                 .toList();
     }
 
-    private void validateStartRequest(QuizAttemptStartRequestDto request) {
+    private void validateStartRequest(QuizAttemptStartRequestDto request, UUID userId) {
         if (request == null) {
             throw new QuizAttemptValidationException("Quiz attempt start request is required");
         }
 
-        if (request.userId() == null) {
+        if (userId== null) {
             throw new QuizAttemptValidationException("User id is required");
         }
 

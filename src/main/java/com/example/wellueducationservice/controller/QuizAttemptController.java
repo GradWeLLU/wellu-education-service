@@ -32,7 +32,7 @@ public class QuizAttemptController {
     public ResponseEntity<QuizAttemptResponseDto> startAttempt(@RequestBody QuizAttemptStartRequestDto request, Authentication authentication) {
         UUID userId = (UUID) authentication.getPrincipal();
 
-        QuizAttemptResponseDto response = quizAttemptService.startAttempt(request);
+        QuizAttemptResponseDto response = quizAttemptService.startAttempt(request, userId);
 
         return ResponseEntity.status(201).body(response);
     }
@@ -49,11 +49,15 @@ public class QuizAttemptController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<List<QuizAttemptResponseDto>> getUserAttempts(@PathVariable UUID userId,Authentication authentication) {
+    @GetMapping("/my-attempts")
+    public ResponseEntity<List<QuizAttemptResponseDto>>
+    getUserAttempts(Authentication authentication) {
 
-         userId = (UUID) authentication.getPrincipal();
-        List<QuizAttemptResponseDto> response = quizAttemptService.getUserAttempts(userId);
+        UUID userId =
+                (UUID) authentication.getPrincipal();
+
+        List<QuizAttemptResponseDto> response =
+                quizAttemptService.getUserAttempts(userId);
 
         return ResponseEntity.ok(response);
     }

@@ -21,7 +21,7 @@ public interface QuizAttemptMapper {
     @Mapping(target = "completedAt", ignore = true)
     @Mapping(target = "answers", ignore = true)
     @Mapping(target = "quiz", source = "quiz")
-    @Mapping(target = "userId", source = "request.userId")
+    @Mapping(target = "userId", ignore = true)
     QuizAttempt toEntity(QuizAttemptStartRequestDto request, Quiz quiz);
 
     QuizAttemptResponseDto toDto(QuizAttempt attempt);

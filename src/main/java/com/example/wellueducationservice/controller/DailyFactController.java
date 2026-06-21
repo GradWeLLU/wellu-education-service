@@ -5,9 +5,12 @@ import com.example.wellueducationservice.service.DailyFactService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -22,7 +25,10 @@ public class DailyFactController {
      * Returns today's fact (from DB or freshly generated).
      */
     @GetMapping("/today")
-    public ResponseEntity<DailyFactDto> getTodayFact() {
+    public ResponseEntity<DailyFactDto> getTodayFact(Authentication authentication) {
+
+        UUID userId = (UUID) authentication.getPrincipal();
+
         DailyFactDto fact = dailyFactService.getTodayFact();
         return ResponseEntity.ok(fact);
     }

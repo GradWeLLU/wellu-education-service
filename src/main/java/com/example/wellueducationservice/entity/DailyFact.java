@@ -33,9 +33,12 @@ public class DailyFact {
 
     @PrePersist
     void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (factDate == null) factDate = createdAt.toLocalDate();
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.factDate == null) {
+            this.factDate = LocalDate.now();
+        }
     }
-
 
 }

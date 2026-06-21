@@ -6,13 +6,13 @@ import com.example.wellueducationservice.dto.response.QuestionImportResponseDto;
 import com.example.wellueducationservice.dto.response.QuizResponseDto;
 import com.example.wellueducationservice.entity.Question;
 import com.example.wellueducationservice.entity.Quiz;
+import com.example.wellueducationservice.exception.QuizException;
+import com.example.wellueducationservice.exception.QuizValidationException;
 import com.example.wellueducationservice.mapper.QuizMapper;
 import com.example.wellueducationservice.repository.QuestionRepository;
 import com.example.wellueducationservice.repository.QuizRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -59,17 +59,17 @@ public class QuizApplicationService {
 
         List<Question> availableQuestions = new ArrayList<>(questionRepository.findAllByQuizIsNullOrderByContentAsc());
         if (availableQuestions.size() < request.questionCount()) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Not enough unassigned questions to create the requested quiz"
+            throw new QuizException(
+                    "Cannot create quiz with %d questions: only %d unassigned questions are available"
+                            .formatted(request.questionCount(), availableQuestions.size())
             );
         }
 
         List<Question> selectedQuestions = selectUniqueQuestions(availableQuestions, request.questionCount());
         if (selectedQuestions.size() < request.questionCount()) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Not enough unique unassigned questions to create the requested quiz"
+            throw new QuizException(
+                    "Cannot create quiz with %d questions: only %d unique unassigned questions are available"
+                            .formatted(request.questionCount(), selectedQuestions.size())
             );
         }
 
@@ -93,18 +93,15 @@ public class QuizApplicationService {
 
     private void validateCreateQuizRequest(CreateQuizRequestDto request) {
         if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quiz request body is required");
+            throw new QuizValidationException("Quiz request body is required");
         }
 
         if (request.title() == null || request.title().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quiz title is required");
+            throw new QuizValidationException("Quiz title is required");
         }
 
         if (request.questionCount() == null || request.questionCount() <= 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Quiz questionCount must be greater than zero"
-            );
+            throw new QuizValidationException("Quiz questionCount must be greater than zero");
         }
     }
 
